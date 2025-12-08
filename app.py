@@ -41,7 +41,6 @@ symptom_keywords = [
     "fever chills headache fatigue sweating nausea",
 ]
 
-# Example educational prescriptions (including antibiotics for learning)
 prescriptions = [
     "Rest, hydration, paracetamol (educational)",
     "Rest, hydration, oseltamivir (educational)",
@@ -138,5 +137,7 @@ if st.button("Add New Illness"):
             "symptom_text": new_keywords,
             "prescription_edu": new_prescription
         }
+        # Re-fit TF-IDF
+        global tfidf_matrix
         tfidf_matrix = vectorizer.fit_transform(df_illness['symptom_text'])
         st.success(f"Added new illness '{new_name}' with educational prescription!")
