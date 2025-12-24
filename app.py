@@ -64,19 +64,17 @@ prescriptions = [
     "Chloroquine or artemisinin (educational), rest, hydration",
 ]
 
-# Build DataFrame
-illnesses = illnesses[:len(symptom_keywords)]
 df_illness = pd.DataFrame({
     "illness": illnesses,
     "symptom_text": symptom_keywords,
-    "prescription_edu": prescriptions[:len(symptom_keywords)]
+    "prescription_edu": prescriptions
 })
 
 # -------------------------------
 # 2. TF-IDF Vectorizer
 # -------------------------------
 vectorizer = TfidfVectorizer()
-tfidf_matrix = vectorizer.fit_transform(df_illness['symptom_text'])
+tfidf_matrix = vectorizer.fit_transform(df_illness["symptom_text"])
 
 # -------------------------------
 # 3. Symptom Matching Function
@@ -90,16 +88,17 @@ def match_illness(user_input, top_n=5):
     results = []
 
     for idx in top_indices:
-        illness_text = df_illness.iloc[idx]['symptom_text'].lower()
+        illness_text = df_illness.iloc[idx]["symptom_text"].lower()
         illness_words = set(illness_text.split())
         matched_keywords = user_words & illness_words
 
         results.append({
-            "illness": df_illness.iloc[idx]['illness'],
-            "similarity": round(sim_scores[idx]*100,2),
+            "illness": df_illness.iloc[idx]["illness"],
+            "similarity": round(sim_scores[idx] * 100, 2),
             "keywords_matched": ", ".join(matched_keywords) if matched_keywords else "None",
-            "prescription_edu": df_illness.iloc[idx]['prescription_edu']
+            "prescription_edu": df_illness.iloc[idx]["prescription_edu"]
         })
+
     return results
 
 # -------------------------------
@@ -117,27 +116,31 @@ if st.button("Analyze Symptoms"):
         matches = match_illness(user_input)
         st.subheader("Top Possible Illnesses (Educational Use Only):")
         for i, m in enumerate(matches, start=1):
-            st.markdown(f"**{i}. {m['illness']}** - Similarity: {m['similarity']}%")
+            st.markdown(f"**{i}. {m['illness']}** — Similarity: {m['similarity']}%")
             st.markdown(f"Keywords matched: {m['keywords_matched']}")
             st.markdown(f"Example prescription (educational): {m['prescription_edu']}")
             st.markdown("---")
 
-# Optional: Add a new illness
+# -------------------------------
+# 5. Add a New Illness
+# -------------------------------
 st.subheader("Add a New Illness (Educational Only)")
+
 new_name = st.text_input("Illness Name:")
 new_keywords = st.text_area("Keywords (space-separated)")
 new_prescription = st.text_area("Educational Prescription")
 
 if st.button("Add New Illness"):
     if not new_name.strip() or not new_keywords.strip() or not new_prescription.strip():
-        st.warning("Please enter all fields to add a new illness.")
+        st.warning("Please enter all fields.")
     else:
         df_illness.loc[len(df_illness)] = {
             "illness": new_name,
             "symptom_text": new_keywords,
             "prescription_edu": new_prescription
         }
-        # Re-fit TF-IDF
-        global tfidf_matrix
-        tfidf_matrix = vectorizer.fit_transform(df_illness['symptom_text'])
-        st.success(f"Added new illness '{new_name}' with educational prescription!")
+
+        # Re-fit TF-IDF safely (NO global needed)
+        tfidf_matrix = vectorizer.fit_transform(df_illness["symptom_text"])
+
+        st.success(f"Added '{new_name}' successfully!")
